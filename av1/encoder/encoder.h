@@ -2779,6 +2779,11 @@ static INLINE int is_stat_consumption_stage(const AV1_COMP *const cpi) {
 // Check if the current stage has statistics
 static INLINE int has_no_stats_stage(const AV1_COMP *const cpi) {
   assert(IMPLIES(!cpi->lap_enabled, cpi->compressor_stage == ENCODE_STAGE));
+  
+  // fprintf(stderr, "\n stage flag: pass %d lap %d",
+      // cpi->oxcf.pass, cpi->lap_enabled);
+  // if (cpi->oxcf.rc_cfg.mode == AOM_VBR) return 1;
+  
   return (cpi->oxcf.pass == 0 && !cpi->lap_enabled);
 }
 
@@ -3088,6 +3093,19 @@ static INLINE char const *get_frame_type_enum(int type) {
     case 1: return "INTER_FRAME";
     case 2: return "INTRA_ONLY_FRAME";
     case 3: return "S_FRAME";
+    default: assert(0);
+  }
+  return "error";
+}
+static INLINE char const *get_frame_update_type_enum(const GF_GROUP *gf_group) {
+  switch (gf_group->update_type[gf_group->index]) {
+    case KF_UPDATE:             return "KF_UPDATE"            ;
+    case LF_UPDATE:             return "LF_UPDATE"            ;
+    case GF_UPDATE:             return "GF_UPDATE"            ;
+    case ARF_UPDATE:            return "ARF_UPDATE"           ;
+    case OVERLAY_UPDATE:        return "OVERLAY_UPDATE"       ;
+    case INTNL_OVERLAY_UPDATE:  return "INTNL_OVERLAY_UPDATE" ;
+    case INTNL_ARF_UPDATE:      return "INTNL_ARF_UPDATE"     ;
     default: assert(0);
   }
   return "error";

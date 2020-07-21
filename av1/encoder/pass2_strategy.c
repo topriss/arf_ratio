@@ -771,6 +771,10 @@ static int adjust_boost_bits_for_target_level(const AV1_COMP *const cpi,
                                               int bits_assigned,
                                               int64_t group_bits,
                                               int frame_type) {
+
+  fprintf(stderr, "\n adjust_boost_bits_for_target_level, bits_assigned: %d",
+    bits_assigned);
+
   const AV1_COMMON *const cm = &cpi->common;
   const SequenceHeader *const seq_params = &cm->seq_params;
   const int temporal_layer_id = cm->temporal_layer_id;
@@ -1390,6 +1394,9 @@ static void correct_frames_to_key(AV1_COMP *cpi) {
  */
 static void define_gf_group_pass0(AV1_COMP *cpi,
                                   const EncodeFrameParams *const frame_params) {
+                                    
+  fprintf(stderr, "\ndefine_gf_group_pass0");
+
   RATE_CONTROL *const rc = &cpi->rc;
   GF_GROUP *const gf_group = &cpi->gf_group;
   const AV1EncoderConfig *const oxcf = &cpi->oxcf;
@@ -1533,6 +1540,9 @@ static void init_gf_stats(GF_GROUP_STATS *gf_stats) {
 static void define_gf_group(AV1_COMP *cpi, FIRSTPASS_STATS *this_frame,
                             const EncodeFrameParams *const frame_params,
                             int max_gop_length, int is_final_pass) {
+
+  fprintf(stderr, "\ndefine_gf_group");
+
   AV1_COMMON *const cm = &cpi->common;
   RATE_CONTROL *const rc = &cpi->rc;
   const AV1EncoderConfig *const oxcf = &cpi->oxcf;
@@ -2520,8 +2530,8 @@ static void find_next_key_frame(AV1_COMP *cpi, FIRSTPASS_STATS *this_frame) {
   // Work out how many bits to allocate for the key frame itself.
   kf_bits = calculate_boost_bits((rc->frames_to_key - 1), rc->kf_boost,
                                  twopass->kf_group_bits);
-  // printf("kf boost = %d kf_bits = %d kf_zeromotion_pct = %d\n", rc->kf_boost,
-  //        kf_bits, twopass->kf_zeromotion_pct);
+  fprintf(stderr, "\nkf boost = %d kf_bits = %d kf_zeromotion_pct = %d", 
+    rc->kf_boost, kf_bits, twopass->kf_zeromotion_pct);
   kf_bits = adjust_boost_bits_for_target_level(cpi, rc, kf_bits,
                                                twopass->kf_group_bits, 0);
 

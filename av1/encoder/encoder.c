@@ -833,6 +833,7 @@ AV1_COMP *av1_create_compressor(AV1EncoderConfig *oxcf, BufferPool *const pool,
   }
 
   cm->error.setjmp = 1;
+  fprintf(stderr, "\n num_lap_buffers: %d", num_lap_buffers);
   cpi->lap_enabled = num_lap_buffers > 0;
   cpi->compressor_stage = stage;
 
@@ -2064,7 +2065,7 @@ static int encode_without_recode(AV1_COMP *cpi) {
   if (cm->current_frame.frame_type == KEY_FRAME) copy_frame_prob_info(cpi);
 
 #if CONFIG_COLLECT_COMPONENT_TIMING
-  printf("\n Encoding a frame:");
+  printf("\n Encoding a frame without recode:");
 #endif
 
   aom_clear_system_state();
@@ -2223,7 +2224,7 @@ static int encode_with_recode_loop(AV1_COMP *cpi, size_t *size, uint8_t *dest) {
   if (cm->current_frame.frame_type == KEY_FRAME) copy_frame_prob_info(cpi);
 
 #if CONFIG_COLLECT_COMPONENT_TIMING
-  printf("\n Encoding a frame:");
+  printf("\n Encoding a frame with recode loop:");
 #endif
 
   // Determine whether to use screen content tools using two fast encoding.
@@ -2775,6 +2776,15 @@ static int encode_frame_to_data_rate(AV1_COMP *cpi, size_t *size,
           realloc_and_scale_source(cpi, cm->cur_frame->buf.y_crop_width,
                                    cm->cur_frame->buf.y_crop_height);
     }
+    fprintf(stderr, "\n Debug dropped frame number: %d", 
+      current_frame->frame_number+1);
+    fprintf(stderr, "\n Frame number: %d, Frame type: %s, Frame update type: %s, Show Frame: %d, MaxLv: %d",
+          cm->current_frame.frame_number+1,
+          get_frame_type_enum(cm->current_frame.frame_type),
+          get_frame_update_type_enum(&cpi->gf_group),
+          cm->show_frame,
+          cpi->gf_group.max_layer_depth_allowed
+          );
     ++current_frame->frame_number;
 
     return AOM_CODEC_OK;
@@ -2986,14 +2996,21 @@ static int encode_frame_to_data_rate(AV1_COMP *cpi, size_t *size,
 
   // Print out timing information.
   int i;
-  fprintf(stderr, "\n Frame number: %d, Frame type: %s, Show Frame: %d\n",
-          cm->current_frame.frame_number,
-          get_frame_type_enum(cm->current_frame.frame_type), cm->show_frame);
+  fprintf(stderr, "\n Frame number: %d, Frame type: %s, Frame update type: %s, Show Frame: %d, MaxLv: %d",
+          cm->current_frame.frame_number+1,
+          get_frame_type_enum(cm->current_frame.frame_type),
+          get_frame_update_type_enum(&cpi->gf_group),
+          cm->show_frame,
+          cpi->gf_group.max_layer_depth_allowed
+          );
+
   for (i = 0; i < kTimingComponents; i++) {
     cpi->component_time[i] += cpi->frame_component_time[i];
+    /*
     fprintf(stderr, " %s:  %" PRId64 " us (total: %" PRId64 " us)\n",
             get_component_name(i), cpi->frame_component_time[i],
             cpi->component_time[i]);
+    */
     cpi->frame_component_time[i] = 0;
   }
 #endif
