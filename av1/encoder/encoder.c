@@ -2065,7 +2065,7 @@ static int encode_without_recode(AV1_COMP *cpi) {
   if (cm->current_frame.frame_type == KEY_FRAME) copy_frame_prob_info(cpi);
 
 #if CONFIG_COLLECT_COMPONENT_TIMING
-  printf("\n Encoding a frame without recode:");
+  fprintf(stderr, "\n Encoding a frame without recode:");
 #endif
 
   aom_clear_system_state();
@@ -2224,7 +2224,7 @@ static int encode_with_recode_loop(AV1_COMP *cpi, size_t *size, uint8_t *dest) {
   if (cm->current_frame.frame_type == KEY_FRAME) copy_frame_prob_info(cpi);
 
 #if CONFIG_COLLECT_COMPONENT_TIMING
-  printf("\n Encoding a frame with recode loop:");
+  fprintf(stderr, "\n Encoding a frame with recode loop:");
 #endif
 
   // Determine whether to use screen content tools using two fast encoding.
@@ -2287,6 +2287,7 @@ static int encode_with_recode_loop(AV1_COMP *cpi, size_t *size, uint8_t *dest) {
 
     av1_set_variance_partition_thresholds(cpi, q, 0);
 
+    fprintf(stderr, "\n encode_with_recode_loop_q = %d", q);
     // printf("Frame %d/%d: q = %d, frame_type = %d superres_denom = %d\n",
     //        cm->current_frame.frame_number, cm->show_frame, q,
     //        cm->current_frame.frame_type, cm->superres_scale_denominator);
@@ -2361,7 +2362,7 @@ static int encode_with_recode_loop(AV1_COMP *cpi, size_t *size, uint8_t *dest) {
     // to recode.
     const int do_dummy_pack =
         (cpi->sf.hl_sf.recode_loop >= ALLOW_RECODE_KFARFGF &&
-         oxcf->rc_cfg.mode != AOM_Q) ||
+         oxcf->rc_cfg.mode != AOM_CQ) ||
         oxcf->rc_cfg.min_cr > 0;
     if (do_dummy_pack) {
       av1_finalize_encoded_frame(cpi);
@@ -2402,7 +2403,7 @@ static int encode_with_recode_loop(AV1_COMP *cpi, size_t *size, uint8_t *dest) {
 #endif
     }
 #if CONFIG_COLLECT_COMPONENT_TIMING
-    if (loop) printf("\n Recoding:");
+    if (loop) fprintf(stderr, "\n Recoding with new q = %d", q);
 #endif
   } while (loop);
 
@@ -2676,6 +2677,31 @@ static int encode_with_and_without_superres(AV1_COMP *cpi, size_t *size,
 extern void av1_print_frame_contexts(const FRAME_CONTEXT *fc,
                                      const char *filename);
 
+static inline void print_frame_stats(const AV1_COMP *cpi){
+  AV1_COMMON *const cm = &cpi->common;
+  const AV1EncoderConfig *const oxcf = &cpi->oxcf;
+
+  fprintf(stderr, "\n has_no_stats_stage = %d", has_no_stats_stage(cpi));
+  fprintf(stderr, "\n base_frame_target = %d", cpi->rc.base_frame_target);
+  fprintf(stderr, "\n this_frame_target = %d", cpi->rc.this_frame_target);
+  fprintf(stderr, "\n projected_frame_size = %d", cpi->rc.projected_frame_size);
+  fprintf(stderr, "\n cq_level = %d", oxcf->rc_cfg.cq_level);
+  fprintf(stderr, "\n last_boosted_qindex = %d", cpi->rc.last_boosted_qindex);
+  fprintf(stderr, "\n quant_params.base_qindex = %d", cm->quant_params.base_qindex);
+  fprintf(stderr, "\n active_worst_quality = %d", cpi->rc.active_worst_quality);
+  fprintf(stderr, "\n active_best_quality = ");
+  for(int ii=0;ii<=MAX_ARF_LAYERS;ii++){
+    fprintf(stderr, " L%d : %d",ii,cpi->rc.active_best_quality[ii]);
+  }
+  fprintf(stderr, "\n Frame number: %d, Frame type: %s, Frame update type: %s, Show Frame: %d, MaxLv: %d",
+        cm->current_frame.frame_number+1,
+        get_frame_type_enum(cm->current_frame.frame_type),
+        get_frame_update_type_enum(&cpi->gf_group),
+        cm->show_frame,
+        cpi->gf_group.max_layer_depth_allowed
+        );
+}
+
 /*!\brief Run the final pass encoding for 1-pass/2-pass encoding mode, and pack
  * the bitstream
  *
@@ -2778,13 +2804,7 @@ static int encode_frame_to_data_rate(AV1_COMP *cpi, size_t *size,
     }
     fprintf(stderr, "\n Debug dropped frame number: %d", 
       current_frame->frame_number+1);
-    fprintf(stderr, "\n Frame number: %d, Frame type: %s, Frame update type: %s, Show Frame: %d, MaxLv: %d",
-          cm->current_frame.frame_number+1,
-          get_frame_type_enum(cm->current_frame.frame_type),
-          get_frame_update_type_enum(&cpi->gf_group),
-          cm->show_frame,
-          cpi->gf_group.max_layer_depth_allowed
-          );
+    print_frame_stats(cpi);
     ++current_frame->frame_number;
 
     return AOM_CODEC_OK;
@@ -2993,17 +3013,8 @@ static int encode_frame_to_data_rate(AV1_COMP *cpi, size_t *size,
 
 #if CONFIG_COLLECT_COMPONENT_TIMING
   end_timing(cpi, encode_frame_to_data_rate_time);
-
   // Print out timing information.
   int i;
-  fprintf(stderr, "\n Frame number: %d, Frame type: %s, Frame update type: %s, Show Frame: %d, MaxLv: %d",
-          cm->current_frame.frame_number+1,
-          get_frame_type_enum(cm->current_frame.frame_type),
-          get_frame_update_type_enum(&cpi->gf_group),
-          cm->show_frame,
-          cpi->gf_group.max_layer_depth_allowed
-          );
-
   for (i = 0; i < kTimingComponents; i++) {
     cpi->component_time[i] += cpi->frame_component_time[i];
     /*
@@ -3014,6 +3025,8 @@ static int encode_frame_to_data_rate(AV1_COMP *cpi, size_t *size,
     cpi->frame_component_time[i] = 0;
   }
 #endif
+
+  print_frame_stats(cpi);
 
   cpi->last_frame_type = current_frame->frame_type;
 
@@ -3051,6 +3064,7 @@ int av1_encode(AV1_COMP *const cpi, uint8_t *const dest,
                const EncodeFrameInput *const frame_input,
                const EncodeFrameParams *const frame_params,
                EncodeFrameResults *const frame_results) {
+  fprintf(stderr, "\n av1_encode called");
   AV1_COMMON *const cm = &cpi->common;
   CurrentFrame *const current_frame = &cm->current_frame;
 

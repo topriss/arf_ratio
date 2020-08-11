@@ -162,6 +162,7 @@ static AOM_INLINE int get_regulated_q_overshoot(AV1_COMP *const cpi, int q_low,
 
   av1_rc_update_rate_correction_factors(cpi, cm->width, cm->height);
 
+  fprintf(stderr, "\n q_overshoot");
   int q_regulated =
       av1_rc_regulate_q(cpi, rc->this_frame_target, bottom_index,
                         AOMMAX(q_high, top_index), cm->width, cm->height);
@@ -184,6 +185,7 @@ static AOM_INLINE int get_regulated_q_undershoot(AV1_COMP *const cpi,
   const RATE_CONTROL *const rc = &cpi->rc;
 
   av1_rc_update_rate_correction_factors(cpi, cm->width, cm->height);
+  fprintf(stderr, "\n q_undershoot");
   int q_regulated = av1_rc_regulate_q(cpi, rc->this_frame_target, bottom_index,
                                       top_index, cm->width, cm->height);
 

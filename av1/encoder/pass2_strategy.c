@@ -705,6 +705,8 @@ static int64_t calculate_total_gf_group_bits(AV1_COMP *cpi,
   int64_t total_group_bits;
 
   if (cpi->lap_enabled) {
+    fprintf(stderr, "\n rc->avg_frame_bandwidth = %d, rc->baseline_gf_interval = %d",
+      rc->avg_frame_bandwidth, rc->baseline_gf_interval);
     total_group_bits = rc->avg_frame_bandwidth * rc->baseline_gf_interval;
     return total_group_bits;
   }
@@ -734,6 +736,8 @@ static int64_t calculate_total_gf_group_bits(AV1_COMP *cpi,
 // Calculate the number of bits to assign to boosted frames in a group.
 static int calculate_boost_bits(int frame_count, int boost,
                                 int64_t total_group_bits) {
+  fprintf(stderr, "\n calculate_boost_bits: frame_count = %d, boost = %d, total_group_bits = %" PRId64,
+  frame_count, boost, total_group_bits);
   int allocation_chunks;
 
   // return 0 for invalid inputs (could arise e.g. through rounding errors)
@@ -751,8 +755,10 @@ static int calculate_boost_bits(int frame_count, int boost,
   }
 
   // Calculate the number of extra bits for use in the boosted frame or frames.
-  return AOMMAX((int)(((int64_t)boost * total_group_bits) / allocation_chunks),
+  int rst = AOMMAX((int)(((int64_t)boost * total_group_bits) / allocation_chunks),
                 0);
+  fprintf(stderr, ", rst = %d", rst);
+  return rst;
 }
 
 // Calculate the boost factor based on the number of bits assigned, i.e. the
@@ -771,10 +777,7 @@ static int adjust_boost_bits_for_target_level(const AV1_COMP *const cpi,
                                               int bits_assigned,
                                               int64_t group_bits,
                                               int frame_type) {
-
-  fprintf(stderr, "\n adjust_boost_bits_for_target_level, bits_assigned: %d",
-    bits_assigned);
-
+  int bits_assigned_before = bits_assigned;
   const AV1_COMMON *const cm = &cpi->common;
   const SequenceHeader *const seq_params = &cm->seq_params;
   const int temporal_layer_id = cm->temporal_layer_id;
@@ -818,6 +821,8 @@ static int adjust_boost_bits_for_target_level(const AV1_COMP *const cpi,
       assert(0);
     }
   }
+  fprintf(stderr, "\n adjust_boost_bits_for_target_level, before: %d, after: %d",
+    bits_assigned_before, bits_assigned);
 
   return bits_assigned;
 }
@@ -825,13 +830,27 @@ static int adjust_boost_bits_for_target_level(const AV1_COMP *const cpi,
 // Allocate bits to each frame in a GF / ARF group
 double layer_fraction[MAX_ARF_LAYERS + 1] = { 1.0,  0.70, 0.55, 0.60,
                                               0.60, 1.0,  1.0 };
-static void allocate_gf_group_bits(GF_GROUP *gf_group, RATE_CONTROL *const rc,
+static void allocate_gf_group_bits(const AV1_COMP *cpi, GF_GROUP *gf_group, RATE_CONTROL *const rc,
                                    int64_t gf_group_bits, int gf_arf_bits,
                                    int key_frame, int use_arf) {
   int64_t total_group_bits = gf_group_bits;
   int base_frame_bits;
   const int gf_group_size = gf_group->size;
   int layer_frames[MAX_ARF_LAYERS + 1] = { 0 };
+
+  fprintf(stderr, "\n gf_group_bits = %" PRId64 ", gf_arf_bits = %d, gf_group_size = %d",
+    gf_group_bits, gf_arf_bits, gf_group_size);
+  fprintf(stderr, "\n key_frame = %d, use_arf = %d",
+    key_frame, use_arf);
+
+  // apply KF ration
+  if (key_frame) {
+    const double kf_ratio = cpi->oxcf.rc_cfg.kf_ratio;
+    int KF_bits = (int)(total_group_bits * kf_ratio);
+    total_group_bits -= KF_bits;
+    gf_arf_bits -= (int)(gf_arf_bits * kf_ratio);
+    gf_group->bit_allocation[0] = KF_bits;
+  }
 
   // Subtract the extra bits set aside for ARF frames from the Group Total
   if (use_arf || !key_frame) total_group_bits -= gf_arf_bits;
@@ -895,6 +914,15 @@ static void allocate_gf_group_bits(GF_GROUP *gf_group, RATE_CONTROL *const rc,
   // Setting this frame to use 0 bit (of out the current GOP budget) will
   // simplify logics in reference frame management.
   gf_group->bit_allocation[gf_group_size] = 0;
+
+  // check bit sum right
+  int64_t gf_group_bits_sum = 0;
+  fprintf(stderr, "\n detailed perframe bit: \n");
+  for (int idx = 0; idx < gf_group_size; ++idx) {
+    fprintf(stderr, " gid %d: %d", idx, gf_group->bit_allocation[idx]);
+    gf_group_bits_sum += gf_group->bit_allocation[idx];
+  }
+  fprintf(stderr, "\n gf_group_bits_sum: %" PRId64, gf_group_bits_sum);
 }
 
 // Returns true if KF group and GF group both are almost completely static.
@@ -1541,7 +1569,7 @@ static void define_gf_group(AV1_COMP *cpi, FIRSTPASS_STATS *this_frame,
                             const EncodeFrameParams *const frame_params,
                             int max_gop_length, int is_final_pass) {
 
-  fprintf(stderr, "\ndefine_gf_group");
+  fprintf(stderr, "\ndefine_gf_group %d", max_gop_length);
 
   AV1_COMMON *const cm = &cpi->common;
   RATE_CONTROL *const rc = &cpi->rc;
@@ -1572,6 +1600,7 @@ static void define_gf_group(AV1_COMP *cpi, FIRSTPASS_STATS *this_frame,
   aom_clear_system_state();
   av1_zero(next_frame);
 
+  // if (has_no_stats_stage(cpi) || (cpi->oxcf.rc_cfg.mode == AOM_VBR)) {
   if (has_no_stats_stage(cpi)) {
     define_gf_group_pass0(cpi, frame_params);
     return;
@@ -1681,7 +1710,8 @@ static void define_gf_group(AV1_COMP *cpi, FIRSTPASS_STATS *this_frame,
         (i >= MIN_GF_INTERVAL) && (gf_cfg->gf_max_pyr_height > MIN_PYRAMID_LVL);
 
     // TODO(urvang): Improve and use model for VBR, CQ etc as well.
-    if (use_alt_ref && rc_cfg->mode == AOM_Q && rc_cfg->cq_level <= 200) {
+    if (use_alt_ref && rc_cfg->mode == AOM_Q && rc_cfg->cq_level <= -1) {
+      fprintf(stderr, "\n use nn gop on rc_cfg->cq_level = %d", rc_cfg->cq_level);
       aom_clear_system_state();
       float features[21];
       get_features_from_gf_stats(
@@ -1705,11 +1735,12 @@ static void define_gf_group(AV1_COMP *cpi, FIRSTPASS_STATS *this_frame,
   // The length reduction strategy is tweaked for certain cases, and doesn't
   // work well for certain other cases.
   const int allow_gf_length_reduction =
-      ((rc_cfg->mode == AOM_Q && rc_cfg->cq_level <= 128) ||
+      ((rc_cfg->mode == AOM_Q && rc_cfg->cq_level <= -1) ||
        !cpi->internal_altref_allowed) &&
       !is_lossless_requested(rc_cfg);
 
   if (allow_gf_length_reduction && use_alt_ref) {
+    fprintf(stderr, "\n allow_gf_length_reduction on rc_cfg->cq_level = %d", rc_cfg->cq_level);
     // adjust length of this gf group if one of the following condition met
     // 1: only one overlay frame left and this gf is too long
     // 2: next gf group is too short to have arf compared to the current gf
@@ -1882,7 +1913,7 @@ void av1_gop_bit_allocation(const AV1_COMP *cpi, RATE_CONTROL *const rc,
                                                    gf_group_bits, 1);
 
   // Allocate bits to each of the frames in the GF group.
-  allocate_gf_group_bits(gf_group, rc, gf_group_bits, gf_arf_bits, is_key_frame,
+  allocate_gf_group_bits(cpi, gf_group, rc, gf_group_bits, gf_arf_bits, is_key_frame,
                          use_arf);
 }
 
@@ -2534,6 +2565,7 @@ static void find_next_key_frame(AV1_COMP *cpi, FIRSTPASS_STATS *this_frame) {
     rc->kf_boost, kf_bits, twopass->kf_zeromotion_pct);
   kf_bits = adjust_boost_bits_for_target_level(cpi, rc, kf_bits,
                                                twopass->kf_group_bits, 0);
+  if (oxcf->rc_cfg.mode == AOM_CQ) kf_bits = 0;
 
   twopass->kf_group_bits -= kf_bits;
 
@@ -2676,6 +2708,7 @@ static void setup_target_rate(AV1_COMP *cpi) {
   }
 
   rc->base_frame_target = target_rate;
+  fprintf(stderr, " : %d", rc->base_frame_target);
 }
 
 void av1_get_second_pass_params(AV1_COMP *cpi,
@@ -2693,6 +2726,7 @@ void av1_get_second_pass_params(AV1_COMP *cpi,
     assert(gf_group->index < gf_group->size);
     const int update_type = gf_group->update_type[gf_group->index];
 
+    fprintf(stderr, "\n setup_base_rate p1");
     setup_target_rate(cpi);
 
     // If this is an arf frame then we dont want to read the stats file or
@@ -2846,6 +2880,7 @@ void av1_get_second_pass_params(AV1_COMP *cpi,
     cpi->partition_search_skippable_frame = is_skippable_frame(cpi);
   }
 
+  fprintf(stderr, "\n setup_base_rate p2");
   setup_target_rate(cpi);
 }
 

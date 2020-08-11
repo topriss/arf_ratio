@@ -381,6 +381,7 @@ static aom_codec_err_t validate_config(aom_codec_alg_priv_t *ctx,
   RANGE_CHECK(cfg, rc_end_usage, AOM_VBR, AOM_Q);
   RANGE_CHECK_HI(cfg, rc_undershoot_pct, 100);
   RANGE_CHECK_HI(cfg, rc_overshoot_pct, 100);
+  RANGE_CHECK_HI(cfg, rc_kf_ratio, 100);
   RANGE_CHECK_HI(cfg, rc_2pass_vbr_bias_pct, 100);
   RANGE_CHECK(cfg, kf_mode, AOM_KF_DISABLED, AOM_KF_AUTO);
   RANGE_CHECK_HI(cfg, rc_dropframe_thresh, 100);
@@ -742,6 +743,7 @@ static aom_codec_err_t set_encoder_config(AV1EncoderConfig *oxcf,
   oxcf->profile = cfg->g_profile;
   oxcf->max_threads = (int)cfg->g_threads;
   oxcf->mode = (cfg->g_usage == AOM_USAGE_REALTIME) ? REALTIME : GOOD;
+  fprintf(stderr, "\n oxcf->mode = %d", oxcf->mode);
 
   // Set frame-dimension related configuration.
   frm_dim_cfg->width = cfg->g_w;
@@ -819,6 +821,7 @@ static aom_codec_err_t set_encoder_config(AV1EncoderConfig *oxcf,
   rc_cfg->cq_level = av1_quantizer_to_qindex(extra_cfg->cq_level);
   rc_cfg->under_shoot_pct = cfg->rc_undershoot_pct;
   rc_cfg->over_shoot_pct = cfg->rc_overshoot_pct;
+  rc_cfg->kf_ratio = (double)(cfg->rc_kf_ratio / 100.0);
   rc_cfg->maximum_buffer_size_ms = is_vbr ? 240000 : cfg->rc_buf_sz;
   rc_cfg->starting_buffer_level_ms = is_vbr ? 60000 : cfg->rc_buf_initial_sz;
   rc_cfg->optimal_buffer_level_ms = is_vbr ? 60000 : cfg->rc_buf_optimal_sz;
@@ -2927,6 +2930,7 @@ static const aom_codec_enc_cfg_t encoder_usage_cfg[] = {
       63,           // rc_max_quantizer
       25,           // rc_undershoot_pct
       25,           // rc_overshoot_pct
+      0,           // rc_kf_ratio
 
       6000,  // rc_max_buffer_size
       4000,  // rc_buffer_initial_size
@@ -2997,6 +3001,7 @@ static const aom_codec_enc_cfg_t encoder_usage_cfg[] = {
       63,           // rc_max_quantizer
       25,           // rc_undershoot_pct
       25,           // rc_overshoot_pct
+      0,           // rc_kf_ratio
 
       6000,  // rc_max_buffer_size
       4000,  // rc_buffer_initial_size

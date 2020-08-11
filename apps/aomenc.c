@@ -328,6 +328,8 @@ static const arg_def_t undershoot_pct =
     ARG_DEF(NULL, "undershoot-pct", 1, "Datarate undershoot (min) target (%)");
 static const arg_def_t overshoot_pct =
     ARG_DEF(NULL, "overshoot-pct", 1, "Datarate overshoot (max) target (%)");
+static const arg_def_t kf_ratio =
+    ARG_DEF(NULL, "kf-ratio", 1, "key frame ratio in gf/arf group (%)");
 static const arg_def_t buf_sz =
     ARG_DEF(NULL, "buf-sz", 1, "Client buffer size (ms)");
 static const arg_def_t buf_initial_sz =
@@ -1565,6 +1567,8 @@ static int parse_stream_params(struct AvxEncoderConfig *global,
       config->cfg.rc_undershoot_pct = arg_parse_uint(&arg);
     } else if (arg_match(&arg, &overshoot_pct, argi)) {
       config->cfg.rc_overshoot_pct = arg_parse_uint(&arg);
+    } else if (arg_match(&arg, &kf_ratio, argi)) {
+      config->cfg.rc_kf_ratio = arg_parse_uint(&arg);
     } else if (arg_match(&arg, &buf_sz, argi)) {
       config->cfg.rc_buf_sz = arg_parse_uint(&arg);
     } else if (arg_match(&arg, &buf_initial_sz, argi)) {
@@ -1772,6 +1776,7 @@ static void show_stream_config(struct stream_state *stream,
   SHOW(rc_max_quantizer);
   SHOW(rc_undershoot_pct);
   SHOW(rc_overshoot_pct);
+  SHOW(rc_kf_ratio);
   SHOW(rc_buf_sz);
   SHOW(rc_buf_initial_sz);
   SHOW(rc_buf_optimal_sz);

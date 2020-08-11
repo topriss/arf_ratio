@@ -136,7 +136,7 @@ static int construct_multi_layer_gf_structure(
   return frame_index;
 }
 
-#define CHECK_GF_PARAMETER 0
+#define CHECK_GF_PARAMETER 1
 #if CHECK_GF_PARAMETER
 void check_frame_params(GF_GROUP *const gf_group, int gf_interval) {
   static const char *update_type_strings[FRAME_UPDATE_TYPES] = {
@@ -144,22 +144,18 @@ void check_frame_params(GF_GROUP *const gf_group, int gf_interval) {
     "ARF_UPDATE",      "OVERLAY_UPDATE", "INTNL_OVERLAY_UPDATE",
     "INTNL_ARF_UPDATE"
   };
-  FILE *fid = fopen("GF_PARAMS.txt", "a");
+  // FILE *fid = fopen("GF_PARAMS.txt", "a");
+  FILE *fid = stderr;
 
-  fprintf(fid, "\ngf_interval = {%d}\n", gf_interval);
+  fprintf(fid, "\n gf_interval = {%d}", gf_interval);
   for (int i = 0; i < gf_group->size; ++i) {
-    fprintf(fid, "#%2d : %s %d %d %d %d\n", i,
+    fprintf(fid, "\n #%2d : %25s arf_src_offset=%5d cur_frame_idx=%5d layer_depth=%5d arf_boost=%10d", i,
             update_type_strings[gf_group->update_type[i]],
-            gf_group->arf_src_offset[i], gf_group->arf_pos_in_gf[i],
-            gf_group->arf_update_idx[i], gf_group->pyramid_level[i]);
+            gf_group->arf_src_offset[i], gf_group->cur_frame_idx[i],
+            gf_group->layer_depth[i],    gf_group->arf_boost[i]);
   }
 
-  fprintf(fid, "number of nodes in each level: \n");
-  for (int i = 0; i < gf_group->pyramid_height; ++i) {
-    fprintf(fid, "lvl %d: %d ", i, gf_group->pyramid_lvl_nodes[i]);
-  }
-  fprintf(fid, "\n");
-  fclose(fid);
+  // fclose(fid);
 }
 #endif  // CHECK_GF_PARAMETER
 
