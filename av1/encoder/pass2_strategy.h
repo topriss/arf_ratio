@@ -45,6 +45,62 @@ typedef struct {
   int non_zero_stdev_count;
 } GF_GROUP_STATS;
 
+static AOM_INLINE void output_gf_gf_stats(const GF_GROUP_STATS *stats) {
+  {
+    fprintf(stderr, "\n GF_STATS: ");
+    fprintf(stderr,
+            " %12.4lf"
+            " %12.4lf"
+            " %12.4lf"
+            " %12.4lf"
+
+            " %12.4lf"
+            " %12.4lf"
+            " %12.4lf"
+            " %12.4lf"
+            " %12.4lf"
+            " %12.4lf"
+            " %12.4lf"
+            " %12.4lf"
+
+            " %12.4lf"
+            " %12.4lf"
+            " %12.4lf"
+            " %12.4lf"
+            " %12.4lf"
+            " %12.4lf"
+            " %12.4lf"
+            " %12.4lf"
+
+            " %12d",
+
+            stats->gf_group_err,
+            stats->gf_group_raw_error,
+            stats->gf_group_skip_pct,
+            stats->gf_group_inactive_zone_rows,
+
+            stats->mv_ratio_accumulator,
+            stats->decay_accumulator,
+            stats->zero_motion_accumulator,
+            stats->loop_decay_rate,
+            stats->last_loop_decay_rate,
+            stats->this_frame_mv_in_out,
+            stats->mv_in_out_accumulator,
+            stats->abs_mv_in_out_accumulator,
+
+            stats->avg_sr_coded_error,
+            stats->avg_tr_coded_error,
+            stats->avg_pcnt_second_ref,
+            stats->avg_pcnt_third_ref,
+            stats->avg_pcnt_third_ref_nolast,
+            stats->avg_new_mv_count,
+            stats->avg_wavelet_energy,
+            stats->avg_raw_err_stdev,
+
+            stats->non_zero_stdev_count);
+  }
+}
+
 typedef struct {
   double frame_err;
   double frame_coded_error;

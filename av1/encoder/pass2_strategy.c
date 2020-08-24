@@ -704,12 +704,12 @@ static int64_t calculate_total_gf_group_bits(AV1_COMP *cpi,
   const int max_bits = frame_max_bits(rc, &cpi->oxcf);
   int64_t total_group_bits;
 
-  if (cpi->lap_enabled) {
-    fprintf(stderr, "\n rc->avg_frame_bandwidth = %d, rc->baseline_gf_interval = %d",
-      rc->avg_frame_bandwidth, rc->baseline_gf_interval);
-    total_group_bits = rc->avg_frame_bandwidth * rc->baseline_gf_interval;
-    return total_group_bits;
-  }
+  fprintf(stderr, "\n rc->avg_frame_bandwidth = %d, rc->baseline_gf_interval = %d, kf_group_bits=%" PRId64 ", gf_group_err=%.3f, kf_group_error_left=%" PRId64,
+    rc->avg_frame_bandwidth, rc->baseline_gf_interval, twopass->kf_group_bits, gf_group_err, twopass->kf_group_error_left);
+  // if (cpi->lap_enabled) {
+  //   total_group_bits = rc->avg_frame_bandwidth * rc->baseline_gf_interval;
+  //   return total_group_bits;
+  // }
 
   // Calculate the bits to be allocated to the group as a whole.
   if ((twopass->kf_group_bits > 0) && (twopass->kf_group_error_left > 0)) {
@@ -844,7 +844,7 @@ static void allocate_gf_group_bits(const AV1_COMP *cpi, GF_GROUP *gf_group, RATE
     key_frame, use_arf);
 
   // kf_bits = 0
-  if (key_frame) gf_group->bit_allocation[0] = 0;
+  // if (key_frame) gf_group->bit_allocation[0] = 0;
 
   // apply arf_ratio via kf_ratio
   int arf_bits = 0;
@@ -920,6 +920,7 @@ static void allocate_gf_group_bits(const AV1_COMP *cpi, GF_GROUP *gf_group, RATE
   // simplify logics in reference frame management.
   gf_group->bit_allocation[gf_group_size] = 0;
 
+  // apply arf_ratio via kf_ratio
   if (use_arf) gf_group->bit_allocation[1] += arf_bits;
 
   // check bit sum right
@@ -1830,6 +1831,13 @@ static void define_gf_group(AV1_COMP *cpi, FIRSTPASS_STATS *this_frame,
   // Reset the file position.
   reset_fpf_position(twopass, start_pos);
 
+  if (cpi->lap_enabled) {
+    // Since we don't have enough stats to know the actual error of the
+    // gf group, we assume error of each frame to be equal to 1 and set
+    // the error of the group as baseline_gf_interval.
+    gf_stats.gf_group_err = rc->baseline_gf_interval;
+  }
+
   // Calculate the bits to be allocated to the gf/arf group as a whole
   gf_group_bits = calculate_total_gf_group_bits(cpi, gf_stats.gf_group_err);
   rc->gf_group_bits = gf_group_bits;
@@ -1895,6 +1903,8 @@ static void define_gf_group(AV1_COMP *cpi, FIRSTPASS_STATS *this_frame,
   // Reset rolling actual and target bits counters for ARF groups.
   twopass->rolling_arf_group_target_bits = 1;
   twopass->rolling_arf_group_actual_bits = 1;
+
+  output_gf_gf_stats(&gf_stats);
 
   av1_gop_bit_allocation(cpi, rc, gf_group,
                          frame_params->frame_type == KEY_FRAME, use_alt_ref,
@@ -2372,6 +2382,10 @@ static double get_kf_boost_score(AV1_COMP *cpi, double kf_raw_err,
   return boost_score;
 }
 
+/*!\brief Interval(in seconds) to clip key-frame distance to in LAP.
+ */
+#define MAX_KF_BITS_INTERVAL_SINGLE_PASS 5
+
 /*!\brief Determine the next key frame group
  *
  * \ingroup gf_group_algo
@@ -2437,7 +2451,9 @@ static void find_next_key_frame(AV1_COMP *cpi, FIRSTPASS_STATS *this_frame) {
   double kf_group_err = 0.0;
   double sr_accumulator = 0.0;
   double kf_group_avg_error = 0.0;
-  int frames_to_key;
+  int frames_to_key, frames_to_key_clipped = INT_MAX;
+  int64_t kf_group_bits_clipped = INT64_MAX;
+
   // Is this a forced key frame by interval.
   rc->this_key_frame_forced = rc->next_key_frame_forced;
 
@@ -2522,6 +2538,25 @@ static void find_next_key_frame(AV1_COMP *cpi, FIRSTPASS_STATS *this_frame) {
   }
   twopass->kf_group_bits = AOMMAX(0, twopass->kf_group_bits);
 
+  if (cpi->lap_enabled) {
+    // In the case of single pass based on LAP, frames to  key may have an
+    // inaccurate value, and hence should be clipped to an appropriate
+    // interval.
+    frames_to_key_clipped =
+        (int)(MAX_KF_BITS_INTERVAL_SINGLE_PASS * cpi->framerate);
+
+    // This variable calculates the bits allocated to kf_group with a clipped
+    // frames_to_key.
+    if (rc->frames_to_key > frames_to_key_clipped) {
+      kf_group_bits_clipped =
+          (int64_t)((double)twopass->kf_group_bits * frames_to_key_clipped /
+                    rc->frames_to_key);
+      // force correction
+      rc->frames_to_key = frames_to_key_clipped;
+      twopass->kf_group_bits = kf_group_bits_clipped;
+    }
+  }
+
   // Reset the first pass file position.
   reset_fpf_position(twopass, start_position);
 
@@ -2566,8 +2601,12 @@ static void find_next_key_frame(AV1_COMP *cpi, FIRSTPASS_STATS *this_frame) {
   }
 
   // Work out how many bits to allocate for the key frame itself.
-  kf_bits = calculate_boost_bits((rc->frames_to_key - 1), rc->kf_boost,
-                                 twopass->kf_group_bits);
+  // In case of LAP enabled for VBR, if the frames_to_key value is
+  // very high, we calculate the bits based on a clipped value of
+  // frames_to_key.
+  kf_bits = calculate_boost_bits(
+      AOMMIN(rc->frames_to_key, frames_to_key_clipped) - 1, rc->kf_boost,
+      AOMMIN(twopass->kf_group_bits, kf_group_bits_clipped));
   fprintf(stderr, "\nkf boost = %d kf_bits = %d kf_zeromotion_pct = %d", 
     rc->kf_boost, kf_bits, twopass->kf_zeromotion_pct);
   kf_bits = adjust_boost_bits_for_target_level(cpi, rc, kf_bits,
@@ -2581,7 +2620,13 @@ static void find_next_key_frame(AV1_COMP *cpi, FIRSTPASS_STATS *this_frame) {
   gf_group->update_type[0] = KF_UPDATE;
 
   // Note the total error score of the kf group minus the key frame itself.
-  twopass->kf_group_error_left = (int)(kf_group_err - kf_mod_err);
+  if (cpi->lap_enabled)
+    // As we don't have enough stats to know the actual error of the group,
+    // we assume the complexity of each frame to be equal to 1, and set the
+    // error as the number of frames in the group(minus the keyframe).
+    twopass->kf_group_error_left = (int)(rc->frames_to_key - 1);
+  else
+    twopass->kf_group_error_left = (int)(kf_group_err - kf_mod_err);
 
   // Adjust the count of total modified error left.
   // The count of bits left is adjusted elsewhere based on real coded frame

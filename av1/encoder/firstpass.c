@@ -44,7 +44,7 @@
 #include "av1/encoder/rd.h"
 #include "av1/encoder/reconinter_enc.h"
 
-#define OUTPUT_FPF 0
+#define OUTPUT_FPF 1
 
 #define FIRST_PASS_Q 10.0
 #define INTRA_MODE_PENALTY 1024
@@ -65,21 +65,22 @@ static AOM_INLINE void output_stats(FIRSTPASS_STATS *stats,
 // TEMP debug code
 #if OUTPUT_FPF
   {
-    FILE *fpfile;
-    fpfile = fopen("firstpass.stt", "a");
-
-    fprintf(fpfile,
-            "%12.0lf %12.4lf %12.0lf %12.0lf %12.0lf %12.4lf %12.4lf"
-            "%12.4lf %12.4lf %12.4lf %12.4lf %12.4lf %12.4lf %12.4lf %12.4lf"
-            "%12.4lf %12.4lf %12.0lf %12.0lf %12.0lf %12.4lf %12.4lf\n",
-            stats->frame, stats->weight, stats->intra_error, stats->coded_error,
-            stats->sr_coded_error, stats->pcnt_inter, stats->pcnt_motion,
-            stats->pcnt_second_ref, stats->pcnt_neutral, stats->intra_skip_pct,
-            stats->inactive_zone_rows, stats->inactive_zone_cols, stats->MVr,
-            stats->mvr_abs, stats->MVc, stats->mvc_abs, stats->MVrv,
-            stats->MVcv, stats->mv_in_out_count, stats->new_mv_count,
-            stats->count, stats->duration);
-    fclose(fpfile);
+    fprintf(stderr, "\n FIRSTPASS_STATS: ");
+    fprintf(stderr,
+            " %12.0lf %12.4lf %12.0lf %12.0lf"
+            " %12.0lf %12.0lf %12.0lf" 
+            " %12.4lf %12.4lf %12.4lf %12.4lf %12.4lf"
+            " %12.4lf %12.4lf %12.4lf"
+            " %12.4lf %12.4lf %12.4lf %12.4lf %12.4lf %12.4lf"
+            " %12.0lf %12.0lf"
+            " %12.4lf %12.4lf %12.4lf",
+            stats->frame,           stats->weight,              stats->intra_error,         stats->frame_avg_wavelet_energy,
+            stats->coded_error,     stats->sr_coded_error,      stats->tr_coded_error,
+            stats->pcnt_inter,      stats->pcnt_motion,         stats->pcnt_second_ref,     stats->pcnt_third_ref,            stats->pcnt_neutral,    
+            stats->intra_skip_pct,  stats->inactive_zone_rows,  stats->inactive_zone_cols, 
+            stats->MVr,             stats->mvr_abs,             stats->MVc,                 stats->mvc_abs,                   stats->MVrv,            stats->MVcv,                
+            stats->mv_in_out_count, stats->new_mv_count, 
+            stats->count,           stats->duration,             stats->raw_error_stdev);
   }
 #endif
 }
