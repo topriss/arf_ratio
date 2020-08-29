@@ -286,6 +286,9 @@ typedef struct {
   int use_arf_in_this_kf_group;
   // Track amount of low motion in scene
   int avg_frame_low_motion;
+  // arf_ratio
+  double last_arf_ratio;
+  double this_arf_ratio;
   /*!\endcond */
 } RATE_CONTROL;
 

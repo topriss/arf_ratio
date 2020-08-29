@@ -45,6 +45,38 @@ typedef struct {
   int non_zero_stdev_count;
 } GF_GROUP_STATS;
 
+// calculate arf_ratio for this gf_group using *normalised* gf_group_stat and last arf_ratio
+static AOM_INLINE void cal_arf_ratio(const GF_GROUP_STATS *stats, const int num_mbs, RATE_CONTROL *const rc) {
+    fprintf(stderr, "\n calculating arf_ratio");
+    double zero_motion_accumulator = stats->zero_motion_accumulator;
+    double gf_group_raw_error_N    = stats->gf_group_raw_error / num_mbs;
+    double avg_sr_coded_error_N    = stats->avg_sr_coded_error / num_mbs;
+    double avg_raw_err_stdev_N     = stats->avg_raw_err_stdev  / num_mbs;
+    double decay_accumulator       = stats->decay_accumulator;
+    double avg_new_mv_count_N      = stats->avg_new_mv_count   / num_mbs;
+    fprintf(stderr, "\n normalized gfstat: [6] %12.4lf [1] %12.4lf [12] %12.4lf [17] %12.4lf [5] %12.4lf [15] %12.4lf",
+    zero_motion_accumulator, gf_group_raw_error_N, avg_sr_coded_error_N, avg_raw_err_stdev_N, decay_accumulator, avg_new_mv_count_N);
+    
+    double arf_ratio_delta = 0;
+    if (zero_motion_accumulator <= 0.387) {
+      if (gf_group_raw_error_N <= 65.431) {
+        if (avg_raw_err_stdev_N > 17.649) arf_ratio_delta = -0.1;
+      } else {
+        if (decay_accumulator <= 0.19)    arf_ratio_delta = -0.1;
+      }
+    } else {
+      if (avg_sr_coded_error_N <= 4.545) {
+        if (avg_new_mv_count_N > 0.01)    arf_ratio_delta =  0.1; 
+      } else {
+        if (avg_raw_err_stdev_N <= 5.536) arf_ratio_delta =  0.1;
+      }
+    }
+
+    rc->this_arf_ratio = fclamp(rc->last_arf_ratio + arf_ratio_delta, 0.0, 1.0);
+    fprintf(stderr,"\n last_arf_ratio=%4.2lf this_arf_ratio=%4.2lf", rc->last_arf_ratio, rc->this_arf_ratio);
+    rc->last_arf_ratio = rc->this_arf_ratio;
+}
+
 static AOM_INLINE void output_gf_gf_stats(const GF_GROUP_STATS *stats) {
   {
     fprintf(stderr, "\n GF_STATS: ");
