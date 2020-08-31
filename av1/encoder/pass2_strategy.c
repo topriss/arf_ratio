@@ -1907,7 +1907,7 @@ static void define_gf_group(AV1_COMP *cpi, FIRSTPASS_STATS *this_frame,
 
   output_gf_gf_stats(&gf_stats);
 
-  cal_arf_ratio(&gf_stats, num_mbs, rc);
+  cal_arf_ratio_MLE(&gf_stats, num_mbs, rc);
 
   av1_gop_bit_allocation(cpi, rc, gf_group,
                          frame_params->frame_type == KEY_FRAME, use_alt_ref,

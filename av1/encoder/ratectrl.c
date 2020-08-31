@@ -341,7 +341,8 @@ void av1_rc_init(const AV1EncoderConfig *oxcf, int pass, RATE_CONTROL *rc) {
   rc->baseline_gf_interval = (rc->min_gf_interval + rc->max_gf_interval) / 2;
   rc->avg_frame_low_motion = 0;
   // arf_ratio
-  rc->last_arf_ratio = 0.4;
+  // rc->last_arf_ratio = 0.4;
+  rc->last_arf_ratio = -0.4054651;
   rc->this_arf_ratio = 0.4;
 }
 
