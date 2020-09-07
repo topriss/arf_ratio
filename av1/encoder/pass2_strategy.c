@@ -847,15 +847,13 @@ static void allocate_gf_group_bits(const AV1_COMP *cpi, GF_GROUP *gf_group, RATE
   // if (key_frame) gf_group->bit_allocation[0] = 0;
 
   // apply arf_ratio via kf_ratio
-  int arf_bits = 0;
   if (use_arf) {
     assert(gf_group_size > 1);
     assert(gf_group->update_type[1] == ARF_UPDATE);
-    // const double arf_ratio = cpi->oxcf.rc_cfg.kf_ratio;
-    const double arf_ratio = rc->this_arf_ratio;
-    arf_bits = (int)(total_group_bits * arf_ratio);
-    total_group_bits -= arf_bits;
-    gf_arf_bits -= (int)(gf_arf_bits * arf_ratio);
+    const double arf_ratio = cpi->oxcf.rc_cfg.kf_ratio;
+    // const double arf_ratio = rc->this_arf_ratio;
+    fprintf(stderr, "using arf_ratio %6.3lf", arf_ratio);
+    gf_arf_bits = (int)(total_group_bits * arf_ratio);
   }
 
   // Subtract the extra bits set aside for ARF frames from the Group Total
@@ -920,9 +918,6 @@ static void allocate_gf_group_bits(const AV1_COMP *cpi, GF_GROUP *gf_group, RATE
   // Setting this frame to use 0 bit (of out the current GOP budget) will
   // simplify logics in reference frame management.
   gf_group->bit_allocation[gf_group_size] = 0;
-
-  // apply arf_ratio via kf_ratio
-  if (use_arf) gf_group->bit_allocation[1] += arf_bits;
 
   // check bit sum right
   int64_t gf_group_bits_sum = 0;
