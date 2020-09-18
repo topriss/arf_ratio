@@ -139,6 +139,7 @@ void av1_accumulate_stats(FIRSTPASS_STATS *section,
 }
 
 void av1_end_first_pass(AV1_COMP *cpi) {
+  fprintf(stderr, "\n source not found");
   if (cpi->twopass.stats_buf_ctx->total_stats)
     output_stats(cpi->twopass.stats_buf_ctx->total_stats, cpi->output_pkt_list);
 }

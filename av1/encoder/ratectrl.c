@@ -641,8 +641,7 @@ int av1_rc_regulate_q(const AV1_COMP *cpi, int target_bits_per_frame,
   if (cpi->oxcf.rc_cfg.mode == AOM_CBR && has_no_stats_stage(cpi))
     return adjust_q_cbr(cpi, q, active_worst_quality);
 
-  fprintf(stderr, "|| target_bits_per_frame = %d, q = %d",
-    target_bits_per_frame, q);
+  // fprintf(stderr, "|| target_bits_per_frame = %d, q = %d", target_bits_per_frame, q);
   return q;
 }
 
@@ -1402,7 +1401,7 @@ static int get_q(const AV1_COMP *cpi, const int width, const int height,
     }
     q = clamp(q, active_best_quality, active_worst_quality);
   } else {
-    fprintf(stderr, "\n get_q");
+    // fprintf(stderr, "\n get_q");
     q = av1_rc_regulate_q(cpi, rc->this_frame_target, active_best_quality,
                           active_worst_quality, width, height);
     if (q > active_worst_quality) {
@@ -1413,7 +1412,7 @@ static int get_q(const AV1_COMP *cpi, const int width, const int height,
     }
     q = AOMMAX(q, active_best_quality);
   }
-  fprintf(stderr, "|| q<get_q> = %d", q);
+  // fprintf(stderr, "|| q<get_q> = %d", q);
   return q;
 }
 
@@ -1587,7 +1586,7 @@ static int rc_pick_q_and_bounds(const AV1_COMP *cpi, int width, int height,
          *bottom_index >= rc->best_quality);
   assert(q <= rc->worst_quality && q >= rc->best_quality);
 
-  fprintf(stderr, "|| q<rc_pick_q> = %d", q);
+  // fprintf(stderr, "|| q<rc_pick_q> = %d", q);
   if (oxcf->rc_cfg.mode == AOM_CQ) q = oxcf->rc_cfg.cq_level;
   return q;
 }

@@ -852,7 +852,9 @@ static void allocate_gf_group_bits(const AV1_COMP *cpi, GF_GROUP *gf_group, RATE
     assert(gf_group_size > 1);
     assert(gf_group->update_type[1] == ARF_UPDATE);
     // const double arf_ratio = cpi->oxcf.rc_cfg.kf_ratio;
-    const double arf_ratio = rc->this_arf_ratio;
+    // const double arf_ratio = rc->this_arf_ratio;
+    const double arf_ratio = 0.0;
+
     arf_bits = (int)(total_group_bits * arf_ratio);
     total_group_bits -= arf_bits;
     gf_arf_bits -= (int)(gf_arf_bits * arf_ratio);
@@ -1907,7 +1909,7 @@ static void define_gf_group(AV1_COMP *cpi, FIRSTPASS_STATS *this_frame,
 
   output_gf_gf_stats(&gf_stats);
 
-  cal_arf_ratio_MLE(&gf_stats, num_mbs, rc);
+  // cal_arf_ratio_MLE(&gf_stats, num_mbs, rc);
 
   av1_gop_bit_allocation(cpi, rc, gf_group,
                          frame_params->frame_type == KEY_FRAME, use_alt_ref,

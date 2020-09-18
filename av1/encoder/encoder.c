@@ -2941,10 +2941,17 @@ static int encode_frame_to_data_rate(AV1_COMP *cpi, size_t *size,
     }
   } else {
 #endif  // CONFIG_SUPERRES_IN_RECODE
-    if (encode_with_recode_loop_and_filter(cpi, size, dest, NULL, NULL,
+    int64_t sse  = INT64_MAX;
+    int64_t rate = INT64_MAX;
+    if (encode_with_recode_loop_and_filter(cpi, size, dest, &sse, &rate,
                                            &largest_tile_id) != AOM_CODEC_OK) {
       return AOM_CODEC_ERROR;
     }
+    const int64_t rdmult =
+      av1_compute_rd_mult_based_on_qindex(cpi, cm->quant_params.base_qindex);
+    const double proj_rdcost = RDCOST_DBL(rdmult, rate, sse);
+    fprintf(stderr, "\n rdmult = %" PRId64 ", CRS = (%.3lf, %" PRId64 ", %" PRId64 ")",
+      rdmult, proj_rdcost, rate, sse);
 #if CONFIG_SUPERRES_IN_RECODE
   }
 #endif  // CONFIG_SUPERRES_IN_RECODE
@@ -3365,6 +3372,7 @@ int av1_get_compressed_data(AV1_COMP *cpi, unsigned int *frame_flags,
                           timestamp_ratio, flush);
   if (result == -1) {
     // Returning -1 indicates no frame encoded; more input is required
+    fprintf(stderr, "\n more input is required");
     return -1;
   }
   if (result != AOM_CODEC_OK) {

@@ -87,6 +87,9 @@ fail:
 int av1_lookahead_push(struct lookahead_ctx *ctx, const YV12_BUFFER_CONFIG *src,
                        int64_t ts_start, int64_t ts_end, int use_highbitdepth,
                        aom_enc_frame_flags_t flags) {
+  fprintf(stderr, "\n lookahead_push called: ts_start = %" PRId64 ", ts_end = %" PRId64 ", flags = %" PRId64, 
+    ts_start, ts_end, flags);
+  
   struct lookahead_entry *buf;
   int width = src->y_crop_width;
   int height = src->y_crop_height;
@@ -139,6 +142,11 @@ int av1_lookahead_push(struct lookahead_ctx *ctx, const YV12_BUFFER_CONFIG *src,
   buf->flags = flags;
   aom_remove_metadata_from_frame_buffer(&buf->img);
   aom_copy_metadata_to_frame_buffer(&buf->img, src->metadata);
+
+  fprintf(stderr,"\n\t after push: stage 0 depth %d, stage 1 depth %d,",
+    av1_lookahead_depth(ctx,0), av1_lookahead_depth(ctx,1) 
+  );
+
   return 0;
 }
 
@@ -152,12 +160,15 @@ struct lookahead_entry *av1_lookahead_pop(struct lookahead_ctx *ctx, int drain,
       buf = pop(ctx, &read_ctx->read_idx);
       read_ctx->sz--;
     }
+    fprintf(stderr,"\n lookahead_pop called[d = %d]: drain = %d, stage = %d, read_idx = %d",
+      av1_lookahead_depth(ctx,stage), drain, stage, read_ctx->read_idx);
   }
   return buf;
 }
 
 struct lookahead_entry *av1_lookahead_peek(struct lookahead_ctx *ctx, int index,
                                            COMPRESSOR_STAGE stage) {
+  int ori_index = index;
   struct lookahead_entry *buf = NULL;
   struct read_ctx *read_ctx = NULL;
   if (ctx == NULL) {
@@ -182,6 +193,8 @@ struct lookahead_entry *av1_lookahead_peek(struct lookahead_ctx *ctx, int index,
     }
   }
 
+  // fprintf(stderr,"\n lookahead_peek called[d = %d]: stage = %d, ori_index = %d, index = %d",
+  //   av1_lookahead_depth(ctx,stage), stage, ori_index, index);
   return buf;
 }
 

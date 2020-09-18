@@ -454,6 +454,10 @@ typedef struct {
    * worst quality qindex.
    */
   double kf_ratio;
+  
+  // int ar_num;
+  // double ar_list[MAX_AR_NUM];
+
   int worst_allowed_q;
   /*!
    * Indicates the minimum qindex that can be used by the quantizer i.e. the
