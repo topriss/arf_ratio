@@ -330,7 +330,7 @@ static const arg_def_t overshoot_pct =
     ARG_DEF(NULL, "overshoot-pct", 1, "Datarate overshoot (max) target (%)");
 static const arg_def_t kf_ratio =
     ARG_DEF(NULL, "kf-ratio", 1, "key frame ratio in gf/arf group (%)");
-// static const arg_def_t ar_list = ARG_DEF(NULL, "ar-list", 1, "ar list to be used");
+static const arg_def_t ar_list = ARG_DEF(NULL, "ar-list", 1, "ar list to be used");
 static const arg_def_t buf_sz =
     ARG_DEF(NULL, "buf-sz", 1, "Client buffer size (ms)");
 static const arg_def_t buf_initial_sz =
@@ -1571,12 +1571,18 @@ static int parse_stream_params(struct AvxEncoderConfig *global,
     } else if (arg_match(&arg, &kf_ratio, argi)) {
       config->cfg.rc_kf_ratio = arg_parse_uint(&arg);
 
-    // } else if (arg_match(&arg, &ar_list, argi)) {
-    //   config->cfg.rc_ar_num = arg_parse_list(&arg, config->cfg.rc_ar_list, MAX_AR_NUM);
-    //   fprintf(stderr, "\n rc_ar_num = %d", config->cfg.rc_ar_num);
-    //   for (int i = 0; i < config->cfg.rc_ar_num; i++){
-    //     fprintf(stderr, " [%d]:%d", i, config->cfg.rc_ar_list[0]);
-    //   }
+    } else if (arg_match(&arg, &ar_list, argi)) {
+      config->cfg.rc_ar_num = arg_parse_list(&arg, config->cfg.rc_ar_list, MAX_AR_NUM);
+      fprintf(stderr, "rc_ar_num = %d", config->cfg.rc_ar_num);
+      fprintf(stderr, "\n");
+      for (int i = 0; i < config->cfg.rc_ar_num; i++){
+        fprintf(stderr, "\t[%d]", i);
+      }
+      fprintf(stderr, "\n");
+      for (int i = 0; i < config->cfg.rc_ar_num; i++){
+        fprintf(stderr, "\t%d", config->cfg.rc_ar_list[i]);
+      }
+      fprintf(stderr, "\n");
 
     } else if (arg_match(&arg, &buf_sz, argi)) {
       config->cfg.rc_buf_sz = arg_parse_uint(&arg);

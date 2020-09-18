@@ -455,8 +455,8 @@ typedef struct {
    */
   double kf_ratio;
   
-  // int ar_num;
-  // double ar_list[MAX_AR_NUM];
+  int ar_num;
+  double ar_list[MAX_AR_NUM];
 
   int worst_allowed_q;
   /*!

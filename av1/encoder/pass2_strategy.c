@@ -852,8 +852,10 @@ static void allocate_gf_group_bits(const AV1_COMP *cpi, GF_GROUP *gf_group, RATE
     assert(gf_group_size > 1);
     assert(gf_group->update_type[1] == ARF_UPDATE);
     // const double arf_ratio = cpi->oxcf.rc_cfg.kf_ratio;
-    // const double arf_ratio = rc->this_arf_ratio;
-    const double arf_ratio = 0.0;
+    const double arf_ratio = rc->this_arf_ratio;
+    // const double arf_ratio = 0.0;
+
+    fprintf(stderr, "\n using arf_ratio = %4.2lf", arf_ratio);
 
     arf_bits = (int)(total_group_bits * arf_ratio);
     total_group_bits -= arf_bits;
@@ -1910,6 +1912,14 @@ static void define_gf_group(AV1_COMP *cpi, FIRSTPASS_STATS *this_frame,
   output_gf_gf_stats(&gf_stats);
 
   // cal_arf_ratio_MLE(&gf_stats, num_mbs, rc);
+  fprintf(stderr, "\n %d / %d of ar list has been used", 
+    rc->used_ar_num, rc_cfg->ar_num
+  );
+  if (rc->used_ar_num >= rc_cfg->ar_num) {
+    die("ar list used up, exit");
+  }
+  rc->this_arf_ratio = rc_cfg->ar_list[rc->used_ar_num];
+  rc->used_ar_num += 1;
 
   av1_gop_bit_allocation(cpi, rc, gf_group,
                          frame_params->frame_type == KEY_FRAME, use_alt_ref,

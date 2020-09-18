@@ -664,8 +664,8 @@ typedef struct aom_codec_enc_cfg {
   unsigned int rc_kf_ratio;
 
 #define MAX_AR_NUM 100
-  // unsigned int rc_ar_list[MAX_AR_NUM];
-  // int rc_ar_num;
+  unsigned int rc_ar_list[MAX_AR_NUM];
+  int rc_ar_num;
 
   /*
    * decoder buffer model parameters

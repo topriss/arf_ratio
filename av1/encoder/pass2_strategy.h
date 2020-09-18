@@ -16,6 +16,8 @@
 extern "C" {
 #endif
 
+#include "common/tools_common.h"
+
 struct AV1_COMP;
 struct EncodeFrameParams;
 // structure of accumulated stats and features in a gf group

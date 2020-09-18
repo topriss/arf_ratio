@@ -383,9 +383,9 @@ static aom_codec_err_t validate_config(aom_codec_alg_priv_t *ctx,
   RANGE_CHECK_HI(cfg, rc_overshoot_pct, 100);
   RANGE_CHECK_HI(cfg, rc_kf_ratio, 100);
 
-  // for (int i = 0; i < cfg->rc_ar_num; ++i) {
-  //   RANGE_CHECK_HI(cfg, rc_ar_list[i], 100);
-  // }
+  for (int i = 0; i < cfg->rc_ar_num; ++i) {
+    RANGE_CHECK_HI(cfg, rc_ar_list[i], 100);
+  }
 
   RANGE_CHECK_HI(cfg, rc_2pass_vbr_bias_pct, 100);
   RANGE_CHECK(cfg, kf_mode, AOM_KF_DISABLED, AOM_KF_AUTO);
@@ -495,10 +495,15 @@ static aom_codec_err_t validate_config(aom_codec_alg_priv_t *ctx,
     if (cfg->use_fixed_qp_offsets > 0) {
       ERROR("--use_fixed_qp_offsets can only be used with --end-usage=q");
     }
+    int error_flag = 0;
     for (int i = 0; i < FIXED_QP_OFFSET_COUNT; ++i) {
       if (cfg->fixed_qp_offsets[i] >= 0) {
-        ERROR("--fixed_qp_offsets can only be used with --end-usage=q");
+        fprintf(stderr, "\n fixed_qp_offsets[%d] = %d", i, cfg->fixed_qp_offsets[i]);
+        error_flag = 1;
       }
+    }
+    if (error_flag) {
+        ERROR("--fixed_qp_offsets can only be used with --end-usage=q");
     }
   }
 
@@ -828,10 +833,10 @@ static aom_codec_err_t set_encoder_config(AV1EncoderConfig *oxcf,
   rc_cfg->over_shoot_pct = cfg->rc_overshoot_pct;
   rc_cfg->kf_ratio = (double)(cfg->rc_kf_ratio / 100.0);
 
-  // rc_cfg->ar_num = cfg->rc_ar_num;
-  // for (int i = 0; i < rc_cfg->ar_num; i++) {
-  //   rc_cfg->ar_list[i] = (double)(cfg->rc_ar_list[i] / 100.0);
-  // }
+  rc_cfg->ar_num = cfg->rc_ar_num;
+  for (int i = 0; i < rc_cfg->ar_num; i++) {
+    rc_cfg->ar_list[i] = (double)(cfg->rc_ar_list[i] / 100.0);
+  }
 
   rc_cfg->maximum_buffer_size_ms = is_vbr ? 240000 : cfg->rc_buf_sz;
   rc_cfg->starting_buffer_level_ms = is_vbr ? 60000 : cfg->rc_buf_initial_sz;
@@ -2942,9 +2947,9 @@ static const aom_codec_enc_cfg_t encoder_usage_cfg[] = {
       63,           // rc_max_quantizer
       25,           // rc_undershoot_pct
       25,           // rc_overshoot_pct
-      0,           // rc_kf_ratio
-      // 100,          // rc_ar_num
-      // { 0, 100 },      // rc_ar_list
+      0,            // rc_kf_ratio
+      { [0 ... MAX_AR_NUM - 1] = 0 }, // rc_ar_list
+      100,                            // rc_ar_num
 
       6000,  // rc_max_buffer_size
       4000,  // rc_buffer_initial_size
@@ -3015,9 +3020,9 @@ static const aom_codec_enc_cfg_t encoder_usage_cfg[] = {
       63,           // rc_max_quantizer
       25,           // rc_undershoot_pct
       25,           // rc_overshoot_pct
-      0,           // rc_kf_ratio
-      // 100,          // rc_ar_num
-      // { 0, 100 },      // rc_ar_list
+      0,            // rc_kf_ratio
+      { [0 ... MAX_AR_NUM - 1] = 0 }, // rc_ar_list
+      100,                            // rc_ar_num
 
       6000,  // rc_max_buffer_size
       4000,  // rc_buffer_initial_size

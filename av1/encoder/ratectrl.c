@@ -344,6 +344,7 @@ void av1_rc_init(const AV1EncoderConfig *oxcf, int pass, RATE_CONTROL *rc) {
   // rc->last_arf_ratio = 0.4;
   rc->last_arf_ratio = -0.4054651;
   rc->this_arf_ratio = 0.4;
+  rc->used_ar_num = 0;
 }
 
 int av1_rc_drop_frame(AV1_COMP *cpi) {

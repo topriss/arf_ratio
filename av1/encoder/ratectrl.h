@@ -289,6 +289,7 @@ typedef struct {
   // arf_ratio
   double last_arf_ratio;
   double this_arf_ratio;
+  int    used_ar_num;
   /*!\endcond */
 } RATE_CONTROL;
 
