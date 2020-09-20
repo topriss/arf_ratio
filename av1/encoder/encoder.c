@@ -2947,11 +2947,17 @@ static int encode_frame_to_data_rate(AV1_COMP *cpi, size_t *size,
                                            &largest_tile_id) != AOM_CODEC_OK) {
       return AOM_CODEC_ERROR;
     }
-    const int64_t rdmult =
-      av1_compute_rd_mult_based_on_qindex(cpi, cm->quant_params.base_qindex);
-    const double proj_rdcost = RDCOST_DBL(rdmult, rate, sse);
-    fprintf(stderr, "\n rdmult = %" PRId64 ", CRS = (%.3lf, %" PRId64 ", %" PRId64 ")",
-      rdmult, proj_rdcost, rate, sse);
+    // GF_GROUP *gf_group = &cpi->gf_group;
+    // if (
+    //   (gf_group->update_type[gf_group->index] == OVERLAY_UPDATE) || 
+    //   (gf_group->update_type[gf_group->index] == INTNL_OVERLAY_UPDATE)){
+    // } else {
+      const int64_t rdmult =
+        av1_compute_rd_mult_based_on_qindex(cpi, cm->quant_params.base_qindex);
+      const double proj_rdcost = RDCOST_DBL(rdmult, rate, sse);
+      fprintf(stderr, "\n rdmult = %" PRId64 ", CRS = (%.3lf, %" PRId64 ", %" PRId64 ")",
+        rdmult, proj_rdcost, rate, sse);
+    // }
 #if CONFIG_SUPERRES_IN_RECODE
   }
 #endif  // CONFIG_SUPERRES_IN_RECODE
