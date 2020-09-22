@@ -851,8 +851,9 @@ static void allocate_gf_group_bits(const AV1_COMP *cpi, GF_GROUP *gf_group, RATE
   if (use_arf) {
     assert(gf_group_size > 1);
     assert(gf_group->update_type[1] == ARF_UPDATE);
-    // const double arf_ratio = cpi->oxcf.rc_cfg.kf_ratio;
-    const double arf_ratio = rc->this_arf_ratio;
+    const double arf_ratio = cpi->oxcf.rc_cfg.kf_ratio;
+    // const double arf_ratio = rc->this_arf_ratio;
+    fprintf(stderr, "\n using arf_ratio %.3lf", arf_ratio);
     arf_bits = (int)(total_group_bits * arf_ratio);
     total_group_bits -= arf_bits;
     gf_arf_bits -= (int)(gf_arf_bits * arf_ratio);
