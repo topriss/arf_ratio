@@ -1568,7 +1568,7 @@ static int parse_stream_params(struct AvxEncoderConfig *global,
     } else if (arg_match(&arg, &overshoot_pct, argi)) {
       config->cfg.rc_overshoot_pct = arg_parse_uint(&arg);
     } else if (arg_match(&arg, &kf_ratio, argi)) {
-      config->cfg.rc_kf_ratio = arg_parse_uint(&arg);
+      config->cfg.rc_kf_ratio = arg_parse_int(&arg);
     } else if (arg_match(&arg, &buf_sz, argi)) {
       config->cfg.rc_buf_sz = arg_parse_uint(&arg);
     } else if (arg_match(&arg, &buf_initial_sz, argi)) {

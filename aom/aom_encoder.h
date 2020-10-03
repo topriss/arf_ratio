@@ -661,7 +661,7 @@ typedef struct aom_codec_enc_cfg {
    */
   unsigned int rc_overshoot_pct;
 
-  unsigned int rc_kf_ratio;
+  int rc_kf_ratio;
 
   /*
    * decoder buffer model parameters
