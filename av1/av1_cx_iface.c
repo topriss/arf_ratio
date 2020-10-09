@@ -383,9 +383,9 @@ static aom_codec_err_t validate_config(aom_codec_alg_priv_t *ctx,
   RANGE_CHECK_HI(cfg, rc_overshoot_pct, 100);
   RANGE_CHECK_HI(cfg, rc_kf_ratio, 100);
 
-  for (int i = 0; i < cfg->rc_ar_num; ++i) {
-    RANGE_CHECK_HI(cfg, rc_ar_list[i], 100);
-  }
+  // for (int i = 0; i < cfg->rc_ar_num; ++i) {
+  //   RANGE_CHECK_HI(cfg, rc_ar_list[i], 100);
+  // }
 
   RANGE_CHECK_HI(cfg, rc_2pass_vbr_bias_pct, 100);
   RANGE_CHECK(cfg, kf_mode, AOM_KF_DISABLED, AOM_KF_AUTO);
