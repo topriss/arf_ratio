@@ -20,6 +20,8 @@
 #include "av1/common/av1_common_int.h"
 #include "av1/common/blockd.h"
 
+#include "example-app/f_interface.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -289,6 +291,7 @@ typedef struct {
   // arf_ratio
   double last_arf_ratio;
   double this_arf_ratio;
+  FHandle rc_fh;
   /*!\endcond */
 } RATE_CONTROL;
 

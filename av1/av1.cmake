@@ -479,11 +479,27 @@ function(setup_av1_targets)
   endif()
 
   if(CONFIG_AV1_ENCODER)
+  
+    list(APPEND AOM_AV1_ENCODER_SOURCES 
+      "${AOM_ROOT}/example-app/f.hpp"
+      "${AOM_ROOT}/example-app/f.cpp"
+      "${AOM_ROOT}/example-app/f_interface.h"
+      "${AOM_ROOT}/example-app/f_interface.cpp"
+    )
+
     add_library(aom_av1_encoder OBJECT ${AOM_AV1_ENCODER_SOURCES})
+
+    # target_compile_definitions(aom_av1_encoder PUBLIC AOM_AV1_ENCODER)    
+
+    target_link_libraries(aom_av1_encoder PUBLIC "${TORCH_LIBRARIES}")
+    set_property(TARGET aom_av1_encoder PROPERTY CXX_STANDARD 14)
+
     set(AOM_LIB_TARGETS ${AOM_LIB_TARGETS} aom_av1_encoder)
     target_sources(aom PRIVATE $<TARGET_OBJECTS:aom_av1_encoder>)
+    target_link_libraries(aom PUBLIC "${TORCH_LIBRARIES}")
     if(BUILD_SHARED_LIBS)
       target_sources(aom_static PRIVATE $<TARGET_OBJECTS:aom_av1_encoder>)
+      target_link_libraries(aom_static PUBLIC "${TORCH_LIBRARIES}")
     endif()
   endif()
 

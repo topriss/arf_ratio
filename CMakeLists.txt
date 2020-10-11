@@ -269,6 +269,9 @@ if(BUILD_SHARED_LIBS)
   set(AOM_LIB_TARGETS ${AOM_LIB_TARGETS} aom_static)
 endif()
 
+list(APPEND CMAKE_PREFIX_PATH "/home/lyh/env/pytorch/libtorch")
+find_package(Torch REQUIRED)
+
 # Setup dependencies.
 setup_aom_dsp_targets()
 setup_aom_mem_targets()
@@ -566,7 +569,7 @@ endif()
 if(ENABLE_TESTS)
 
   # Create test_libaom target and the targets it depends on.
-  setup_aom_test_targets()
+  # setup_aom_test_targets()
 endif()
 
 if(HAVE_PTHREAD_H AND CONFIG_MULTITHREAD)

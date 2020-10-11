@@ -12,6 +12,8 @@
 #ifndef AOM_AV1_ENCODER_PASS2_STRATEGY_H_
 #define AOM_AV1_ENCODER_PASS2_STRATEGY_H_
 
+#include "example-app/f_interface.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -46,15 +48,41 @@ typedef struct {
 } GF_GROUP_STATS;
 
 static AOM_INLINE void cal_arf_ratio_MLE(const GF_GROUP_STATS *stats, const int num_mbs, RATE_CONTROL *rc) {
-  const double MLEweight[] = { 
-  0.00292498,-0.01291512, 0.20006554, 0.11155664, 0.00063053, 0.10770296,
-  0.18069474, 0.06173544, 0.06092842,-0.18044636,-0.10560494,-0.22200811,
-  0.02643944, 0.02235282, 0.19308184,-0.1407296,  0.00356003,-0.01174851,
-  -0.00225225 };
-  const double MLEbias = 0.00088391;
-
   fprintf(stderr, "\n calculating arf_ratio");
-  double x[19];
+  double x[21] = { 0 };
+
+  /*
+  cols = [
+        'gf_group_err',
+        'gf_group_raw_error',
+        'gf_group_skip_pct',
+        'gf_group_inactive_zone_rows',
+        'mv_ratio_accumulator',
+        'decay_accumulator',
+        'zero_motion_accumulator',
+        'loop_decay_rate',
+        'last_loop_decay_rate',
+        'this_frame_mv_in_out',
+        'mv_in_out_accumulator',
+        'abs_mv_in_out_accumulator',
+        'avg_sr_coded_error',
+        'avg_tr_coded_error',
+        'avg_pcnt_second_ref',
+        'avg_pcnt_third_ref',
+        'avg_pcnt_third_ref_nolast',
+        'avg_new_mv_count',
+        'avg_wavelet_energy',
+        'avg_raw_err_stdev',
+        'non_zero_stdev_count',
+    ]
+  
+  gs['gf_group_raw_error'] /= mbs
+    gs['avg_sr_coded_error'] /= mbs
+    gs['avg_tr_coded_error'] /= mbs
+    gs['avg_wavelet_energy'] /= mbs
+    gs['avg_new_mv_count']   /= mbs
+    gs['avg_raw_err_stdev']  /= mbs
+  */
 
   x[0]  = (double)(stats->gf_group_err);
   x[1]  = (double)(stats->gf_group_raw_error    / num_mbs / 16.0);
@@ -71,25 +99,21 @@ static AOM_INLINE void cal_arf_ratio_MLE(const GF_GROUP_STATS *stats, const int 
   x[12] = (double)(stats->avg_sr_coded_error    / num_mbs / 16.0);
   x[13] = (double)(stats->avg_tr_coded_error    / num_mbs / 16.0);
   x[14] = (double)(stats->avg_pcnt_second_ref);
-  x[15] = (double)(stats->avg_new_mv_count      / num_mbs / 16.0);
-  x[16] = (double)(stats->avg_wavelet_energy    / num_mbs / 16.0);
-  x[17] = (double)(stats->avg_raw_err_stdev     / num_mbs / 16.0);
-  x[18] = (double)(stats->non_zero_stdev_count);
+  x[15] = (double)(stats->avg_pcnt_third_ref);
+  x[16] = (double)(stats->avg_pcnt_third_ref_nolast);
+  x[17] = (double)(stats->avg_new_mv_count      / num_mbs / 16.0);
+  x[18] = (double)(stats->avg_wavelet_energy    / num_mbs / 16.0);
+  x[19] = (double)(stats->avg_raw_err_stdev     / num_mbs / 16.0);
+  x[20] = (double)(stats->non_zero_stdev_count);
 
-  double delta_s = 0;
   fprintf(stderr,"\n");
-  for(int i = 0; i < 19; i++){
-    delta_s += x[i] * MLEweight[i];
-    fprintf(stderr," x[%02d]=%6.3lf||ds=%6.3lf", i, x[i], delta_s);
+  for(int i = 0; i < 21; i++){
+    fprintf(stderr," x[%02d]=%6.3lf", i, x[i]);
   }
-  delta_s += MLEbias;
-  // use last_arf_ratio as s
-  rc->last_arf_ratio += delta_s;
-  // use this_arf_ratio as y(or r)
-  rc->this_arf_ratio = 1/(1 + exp(-rc->last_arf_ratio));
+
+  rc->this_arf_ratio = F_f(rc->rc_fh, x) + 0.5;
   rc->this_arf_ratio = fclamp(rc->this_arf_ratio, 0.0, 1.0);
-  fprintf(stderr,"\n delta_s=%6.3lf s=%6.3lf y=%6.3lf", 
-    delta_s, rc->last_arf_ratio, rc->this_arf_ratio);
+  fprintf(stderr,"\n y_pred=%6.3lf", rc->this_arf_ratio);
 }
 
 // calculate arf_ratio for this gf_group using *normalised* gf_group_stat and last arf_ratio
