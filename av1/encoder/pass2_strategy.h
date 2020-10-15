@@ -111,8 +111,8 @@ static AOM_INLINE void cal_arf_ratio_MLE(const GF_GROUP_STATS *stats, const int 
     fprintf(stderr," x[%02d]=%6.3lf", i, x[i]);
   }
 
-  rc->this_arf_ratio = F_f(rc->rc_fh, x) + 0.5;
-  rc->this_arf_ratio = fclamp(rc->this_arf_ratio, 0.0, 1.0);
+  rc->this_arf_ratio = F_f(rc->rc_fh, x) * 2.0;
+  rc->this_arf_ratio = fclamp(rc->this_arf_ratio, -1.0, 1.0);
   fprintf(stderr,"\n y_pred=%6.3lf", rc->this_arf_ratio);
 }
 
